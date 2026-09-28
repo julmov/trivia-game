@@ -33,21 +33,29 @@ public class Main {
     private static final Color CORRECT_GREEN = new Color(42, 150, 92);
     private static final Color WRONG_RED = new Color(190, 65, 68);
 
-    private static final List<Question> QUESTIONS = List.of(
-            new Question("Which planet is known as the ocean world?", new String[]{"Tatooine", "Kamino", "Hoth", "Naboo"}, 1),
-            new Question("What is the name of Han Solo's ship?", new String[]{"X-wing", "Slave I", "Millennium Falcon", "Razor Crest"}, 2),
-            new Question("Which order protects the galaxy with the Force?", new String[]{"The Jedi Order", "The Trade Federation", "The Empire", "The Senate"}, 0)
-    );
-
     private final JFrame frame = new JFrame("Galaxy Trivia");
     private final JLabel questionLabel = new JLabel();
     private final JLabel progressLabel = new JLabel();
     private final JLabel scoreLabel = new JLabel();
     private final JRadioButton[] answers = new JRadioButton[4];
+    private List<Question> questions;
     private int questionIndex;
     private int score;
 
     private void show() {
+        try {
+            questions = new PostgresQuestionRepository().findAll();
+        } catch (Exception exception) {
+            JOptionPane.showMessageDialog(null,
+                    "Could not load questions from PostgreSQL.\n" + exception.getMessage(),
+                    "Database connection error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (questions.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "The database has no questions yet.", "No questions", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setMinimumSize(new Dimension(760, 520));
         frame.setContentPane(new SpacePanel());
@@ -57,9 +65,9 @@ public class Main {
     }
 
     private void loadQuestion() {
-        Question question = QUESTIONS.get(questionIndex);
+        Question question = questions.get(questionIndex);
         questionLabel.setText("<html><div style='width:560px'>" + question.text + "</div></html>");
-        progressLabel.setText("QUESTION " + (questionIndex + 1) + " / " + QUESTIONS.size());
+        progressLabel.setText("QUESTION " + (questionIndex + 1) + " / " + questions.size());
         scoreLabel.setText("SCORE  " + score);
         for (int i = 0; i < answers.length; i++) {
             answers[i].setText(question.choices[i]);
@@ -81,7 +89,7 @@ public class Main {
             JOptionPane.showMessageDialog(frame, "Choose an answer before submitting.", "No answer", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        int correctAnswer = QUESTIONS.get(questionIndex).correctAnswer;
+        int correctAnswer = questions.get(questionIndex).correctAnswer;
         boolean isCorrect = selected == correctAnswer;
         if (isCorrect) {
             score++;
@@ -95,8 +103,8 @@ public class Main {
         }
         Timer feedbackTimer = new Timer(700, nextQuestion -> {
             questionIndex++;
-            if (questionIndex == QUESTIONS.size()) {
-                JOptionPane.showMessageDialog(frame, "Mission complete! You scored " + score + " / " + QUESTIONS.size() + ".", "Final score", JOptionPane.INFORMATION_MESSAGE);
+            if (questionIndex == questions.size()) {
+                JOptionPane.showMessageDialog(frame, "Mission complete! You scored " + score + " / " + questions.size() + ".", "Final score", JOptionPane.INFORMATION_MESSAGE);
                 questionIndex = 0;
                 score = 0;
             }
@@ -189,6 +197,4 @@ public class Main {
         }
     }
 
-    private record Question(String text, String[] choices, int correctAnswer) {
-    }
 }

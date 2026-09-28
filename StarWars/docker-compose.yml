@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: galaxy-trivia-postgres
+    environment:
+      POSTGRES_DB: galaxy_trivia
+      POSTGRES_USER: trivia_user
+      POSTGRES_PASSWORD: trivia_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+
+volumes:
+  postgres_data:
